@@ -1,4 +1,4 @@
-// Interactive Chat Widget for n8n
+// Interchat_active Chat Widget for n8n
 (function() {
     // Initialize widget only once
     if (window.N8nChatWidgetLoaded) return;
@@ -171,7 +171,7 @@
             height: 100%;
         }
 
-        .chat-assist-widget .chat-body.active {
+        .chat-assist-widget .chat-body.chat_active {
             display: flex;
         }
 
@@ -445,7 +445,7 @@
             display: none;
         }
 
-        .chat-assist-widget .user-registration.active {
+        .chat-assist-widget .user-registration.chat_active {
             display: block;
         }
 
@@ -718,7 +718,7 @@
     // Show registration form
     function showRegistrationForm() {
         chatWelcome.style.display = 'none';
-        userRegistration.classList.add('active');
+        userRegistration.classList.add('chat_active');
     }
 
     // Validate email format
@@ -790,8 +790,8 @@
 
         try {
             // Hide registration form, show chat interface
-            userRegistration.classList.remove('active');
-            chatBody.classList.add('active');
+            userRegistration.classList.remove('chat_active');
+            chatBody.classList.add('chat_active');
             
             // Show typing indicator
             const typingIndicator = createTypingIndicator();
