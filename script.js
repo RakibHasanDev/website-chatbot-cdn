@@ -591,10 +591,11 @@
       }
     : defaultSettings;
 
-  // Session tracking
-  let conversationId =
-    sessionStorage.getItem("conversationId") || createSessionId();
+  // --- MODIFICATION ---
+  // Session tracking. conversationId will be set by loadChatState or handleRegistration
+  let conversationId = null;
   let isWaitingForResponse = false;
+  // --- END MODIFICATION ---
 
   // Create widget DOM structure
   const widgetRoot = document.createElement("div");
@@ -711,17 +712,19 @@
   const chatWelcome = chatWindow.querySelector(".chat-welcome");
   const nameInput = chatWindow.querySelector("#chat-user-name");
   const emailInput = chatWindow.querySelector("#chat-user-email");
-  const phoneInput = chatWindow.querySelector("#chat-user-phone"); // ADDED
+  const phoneInput = chatWindow.querySelector("#chat-user-phone");
   const nameError = chatWindow.querySelector("#name-error");
   const emailError = chatWindow.querySelector("#email-error");
-  const phoneError = chatWindow.querySelector("#phone-error"); // ADDED
+  const phoneError = chatWindow.querySelector("#phone-error");
 
-  // Helper function to generate unique session ID
+  // --- MODIFICATION ---
+  // Helper function to generate unique session ID and save to localStorage
   function createSessionId() {
     const sessionId = crypto.randomUUID();
-    sessionStorage.setItem("conversationId", sessionId);
+    localStorage.setItem("conversationId", sessionId); // Use localStorage
     return sessionId;
   }
+  // --- END MODIFICATION ---
 
   // Create typing indicator element
   function createTypingIndicator() {
@@ -737,15 +740,36 @@
 
   // Function to convert URLs in text to clickable links
   function linkifyText(text) {
-    // URL pattern that matches http, https, ftp links
     const urlPattern =
       /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-
-    // Convert URLs to HTML links
     return text.replace(urlPattern, function (url) {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link">${url}</a>`;
     });
   }
+
+  // --- MODIFICATION ---
+  // Helper functions for localStorage chat history
+  function getChatHistory() {
+    const history = localStorage.getItem("chatHistory");
+    return history ? JSON.parse(history) : [];
+  }
+
+  function saveChatHistory(history) {
+    localStorage.setItem("chatHistory", JSON.stringify(history));
+  }
+
+  function addMessageToHistory(type, text) {
+    try {
+      const history = getChatHistory();
+      history.push({ type, text });
+      saveChatHistory(history);
+    } catch (e) {
+      console.error("Failed to save chat history:", e);
+      // Clear history if it's corrupted
+      localStorage.removeItem("chatHistory");
+    }
+  }
+  // --- END MODIFICATION ---
 
   // Show registration form
   function showRegistrationForm() {
@@ -763,22 +787,31 @@
   async function handleRegistration(event) {
     event.preventDefault();
 
+    // --- MODIFICATION ---
+    // Start a new session: clear old history, create new ID
+    saveChatHistory([]); // Clear history for new registration
+    conversationId = createSessionId(); // Create new ID and save to localStorage
+    // --- END MODIFICATION ---
+
     // Reset error messages
     nameError.textContent = "";
     emailError.textContent = "";
-    phoneError.textContent = ""; // ADDED
+    phoneError.textContent = "";
     nameInput.classList.remove("error");
     emailInput.classList.remove("error");
-    phoneInput.classList.remove("error"); // ADDED
+    phoneInput.classList.remove("error");
 
     // Get values
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
-    const phone = phoneInput.value.trim(); // ADDED
+    const phone = phoneInput.value.trim();
 
-    sessionStorage.setItem("userName", name);
-    sessionStorage.setItem("userEmail", email);
-    sessionStorage.setItem("userPhone", phone);
+    // --- MODIFICATION ---
+    // Use localStorage
+    localStorage.setItem("userName", name);
+    localStorage.setItem("userEmail", email);
+    localStorage.setItem("userPhone", phone);
+    // --- END MODIFICATION ---
 
     // Validate
     let isValid = true;
@@ -799,18 +832,13 @@
       isValid = false;
     }
 
-    // ADDED VALIDATION FOR PHONE
     if (!phone) {
       phoneError.textContent = "Please enter your phone number";
       phoneInput.classList.add("error");
       isValid = false;
     }
-    // END OF ADDED VALIDATION
 
     if (!isValid) return;
-
-    // Initialize conversation with user data
-    conversationId = createSessionId();
 
     // Initialize conversation with user data
     const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}`;
@@ -844,10 +872,9 @@
       });
 
       const sessionResponseData = await sessionResponse.json();
+      console.log("sessionResponseData", sessionResponseData);
 
       // Send user info as first message
-      const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}`; // MODIFIED
-
       const userInfoData = {
         action: "sendMessage",
         sessionId: conversationId,
@@ -856,7 +883,7 @@
         metadata: {
           userId: email,
           userName: name,
-          userPhone: phone, // ADDED
+          userPhone: phone,
           isUserInfo: true,
         },
       };
@@ -884,6 +911,11 @@
       botMessage.innerHTML = linkifyText(messageText);
       messagesContainer.appendChild(botMessage);
 
+      // --- MODIFICATION ---
+      // Save the first bot message to history
+      addMessageToHistory("bot", messageText);
+      // --- END MODIFICATION ---
+
       // Add sample questions if configured
       if (
         settings.suggestedQuestions &&
@@ -899,7 +931,6 @@
           questionButton.textContent = question;
           questionButton.addEventListener("click", () => {
             submitMessage(question);
-            // Remove the suggestions after clicking
             if (suggestedQuestionsContainer.parentNode) {
               suggestedQuestionsContainer.parentNode.removeChild(
                 suggestedQuestionsContainer
@@ -908,21 +939,16 @@
           });
           suggestedQuestionsContainer.appendChild(questionButton);
         });
-
         messagesContainer.appendChild(suggestedQuestionsContainer);
       }
 
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     } catch (error) {
       console.error("Registration error:", error);
-
-      // Remove typing indicator if it exists
       const indicator = messagesContainer.querySelector(".typing-indicator");
       if (indicator) {
         messagesContainer.removeChild(indicator);
       }
-
-      // Show error message
       const errorMessage = document.createElement("div");
       errorMessage.className = "chat-bubble bot-bubble";
       errorMessage.textContent =
@@ -938,15 +964,12 @@
 
     isWaitingForResponse = true;
 
-    // Get user info from sessionStorage
-    const userName = sessionStorage.getItem("userName");
-    const userEmail = sessionStorage.getItem("userEmail");
-    const userPhone = sessionStorage.getItem("userPhone");
-
-    // Get user info if available
-    const name = nameInput ? nameInput.value.trim() : ""; // Corrected
-    const email = emailInput ? emailInput.value.trim() : ""; // Corrected
-    const phone = phoneInput ? phoneInput.value.trim() : ""; // ADDED
+    // --- MODIFICATION ---
+    // Get user info from localStorage
+    const userName = localStorage.getItem("userName");
+    const userEmail = localStorage.getItem("userEmail");
+    const userPhone = localStorage.getItem("userPhone");
+    // --- END MODIFICATION ---
 
     const requestData = {
       action: "sendMessage",
@@ -965,6 +988,11 @@
     userMessage.className = "chat-bubble user-bubble";
     userMessage.textContent = messageText;
     messagesContainer.appendChild(userMessage);
+
+    // --- MODIFICATION ---
+    // Save user message to history
+    addMessageToHistory("user", messageText);
+    // --- END MODIFICATION ---
 
     // Show typing indicator
     const typingIndicator = createTypingIndicator();
@@ -993,14 +1021,16 @@
         : responseData.output;
       botMessage.innerHTML = linkifyText(responseText);
       messagesContainer.appendChild(botMessage);
+
+      // --- MODIFICATION ---
+      // Save bot response to history
+      addMessageToHistory("bot", responseText);
+      // --- END MODIFICATION ---
+
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     } catch (error) {
       console.error("Message submission error:", error);
-
-      // Remove typing indicator
       messagesContainer.removeChild(typingIndicator);
-
-      // Show error message
       const errorMessage = document.createElement("div");
       errorMessage.className = "chat-bubble bot-bubble";
       errorMessage.textContent =
@@ -1020,6 +1050,53 @@
         ? 120
         : messageTextarea.scrollHeight) + "px";
   }
+
+  // --- MODIFICATION ---
+  // Function to load chat state on widget initialization
+  function loadChatState() {
+    const storedName = localStorage.getItem("userName");
+    const storedEmail = localStorage.getItem("userEmail");
+    const storedId = localStorage.getItem("conversationId");
+
+    if (storedName && storedEmail && storedId) {
+      // We have a returning, registered user
+      console.log("Returning user found. Loading history.");
+      conversationId = storedId; // Set the global conversationId
+
+      // Bypass welcome/registration
+      chatWelcome.style.display = "none";
+      userRegistration.classList.remove("chat_active");
+      chatBody.classList.add("chat_active");
+
+      // Load history
+      const history = getChatHistory();
+      history.forEach((message) => {
+        const bubble = document.createElement("div");
+        // Linkify text when loading from history
+        bubble.innerHTML = linkifyText(message.text);
+        bubble.className = `chat-bubble ${message.type}-bubble`;
+        messagesContainer.appendChild(bubble);
+      });
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } else {
+      // New user or incomplete data
+      console.log("No valid user session found. Starting fresh.");
+      // Clear everything to be safe and start fresh
+      localStorage.removeItem("conversationId");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("userPhone");
+      localStorage.removeItem("chatHistory");
+      conversationId = null; // Ensure it's null
+      // The default UI (welcome screen) will show
+    }
+  }
+  // --- END MODIFICATION ---
+
+  // --- MODIFICATION ---
+  // Call the load state function right after DOM elements are defined
+  loadChatState();
+  // --- END MODIFICATION ---
 
   // Event listeners
   startChatButton.addEventListener("click", showRegistrationForm);
@@ -1050,6 +1127,8 @@
 
   launchButton.addEventListener("click", () => {
     chatWindow.classList.toggle("visible");
+    // Scroll to bottom when opening, in case history was loaded
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
 
   // Close button functionality
