@@ -551,8 +551,8 @@
             }
         },
         style: {
-            primaryColor: '#10b981', // Green
-            secondaryColor: '#059669', // Darker green
+            itsPrimaryColor: '#10b981', // Green
+            itsSecondaryColor: '#059669', // Darker green
             position: 'right',
             backgroundColor: '#ffffff',
             fontColor: '#1f2937'
@@ -569,8 +569,8 @@
                 ...defaultSettings.style, 
                 ...window.ChatWidgetConfig.style,
                 // Force green colors if user provided purple
-                primaryColor: window.ChatWidgetConfig.style?.primaryColor === '#854fff' ? '#10b981' : (window.ChatWidgetConfig.style?.primaryColor || '#10b981'),
-                secondaryColor: window.ChatWidgetConfig.style?.secondaryColor === '#6b3fd4' ? '#059669' : (window.ChatWidgetConfig.style?.secondaryColor || '#059669')
+                itsPrimaryColor: window.ChatWidgetConfig.style?.itsPrimaryColor === '#854fff' ? '#10b981' : (window.ChatWidgetConfig.style?.itsPrimaryColor || '#10b981'),
+                itsSecondaryColor: window.ChatWidgetConfig.style?.itsSecondaryColor === '#6b3fd4' ? '#059669' : (window.ChatWidgetConfig.style?.itsSecondaryColor || '#059669')
             },
             suggestedQuestions: window.ChatWidgetConfig.suggestedQuestions || defaultSettings.suggestedQuestions
         } : defaultSettings;
@@ -584,9 +584,9 @@
     widgetRoot.className = 'chat-assist-widget';
     
     // Apply custom colors
-    widgetRoot.style.setProperty('--chat-widget-primary', settings.style.primaryColor);
-    widgetRoot.style.setProperty('--chat-widget-secondary', settings.style.secondaryColor);
-    widgetRoot.style.setProperty('--chat-widget-tertiary', settings.style.secondaryColor);
+    widgetRoot.style.setProperty('--chat-widget-primary', settings.style.itsPrimaryColor);
+    widgetRoot.style.setProperty('--chat-widget-secondary', settings.style.itsSecondaryColor);
+    widgetRoot.style.setProperty('--chat-widget-tertiary', settings.style.itsSecondaryColor);
     widgetRoot.style.setProperty('--chat-widget-surface', settings.style.backgroundColor);
     widgetRoot.style.setProperty('--chat-widget-text', settings.style.fontColor);
 
@@ -1004,3 +1004,6 @@
         });
     });
 })();
+
+
+
