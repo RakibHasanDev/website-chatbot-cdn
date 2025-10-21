@@ -1,18 +1,19 @@
 // Interchat_active Chat Widget for n8n
-(function() {
-    // Initialize widget only once
-    if (window.N8nChatWidgetLoaded) return;
-    window.N8nChatWidgetLoaded = true;
+(function () {
+  // Initialize widget only once
+  if (window.N8nChatWidgetLoaded) return;
+  window.N8nChatWidgetLoaded = true;
 
-    // Load font resource - using Poppins for a fresh look
-    const fontElement = document.createElement('link');
-    fontElement.rel = 'stylesheet';
-    fontElement.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap';
-    document.head.appendChild(fontElement);
+  // Load font resource - using Poppins for a fresh look
+  const fontElement = document.createElement("link");
+  fontElement.rel = "stylesheet";
+  fontElement.href =
+    "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap";
+  document.head.appendChild(fontElement);
 
-    // Apply widget styles with completely different design approach
-    const widgetStyles = document.createElement('style');
-    widgetStyles.textContent = `
+  // Apply widget styles with completely different design approach
+  const widgetStyles = document.createElement("style");
+  widgetStyles.textContent = `
         .chat-assist-widget {
             --chat-color-primary: var(--chat-widget-primary, #10b981);
             --chat-color-secondary: var(--chat-widget-secondary, #059669);
@@ -532,70 +533,100 @@
             transform: none;
         }
     `;
-    document.head.appendChild(widgetStyles);
+  document.head.appendChild(widgetStyles);
 
-    // Default configuration
-    const defaultSettings = {
+  // Default configuration
+  const defaultSettings = {
+    webhook: {
+      url: "",
+      route: "",
+    },
+    branding: {
+      logo: "",
+      name: "",
+      welcomeText: "",
+      responseTimeText: "",
+      poweredBy: {
+        text: "Powered by n8n",
+        link: "https://n8n.partnerlinks.io/fabimarkl",
+      },
+    },
+    style: {
+      itsPrimaryColor: "#10b981", // Green
+      itsSecondaryColor: "#059669", // Darker green
+      position: "right",
+      backgroundColor: "#ffffff",
+      fontColor: "#1f2937",
+    },
+    suggestedQuestions: [], // Default empty array for suggested questions
+  };
+
+  // Merge user settings with defaults
+  const settings = window.ChatWidgetConfig
+    ? {
         webhook: {
-            url: '',
-            route: ''
+          ...defaultSettings.webhook,
+          ...window.ChatWidgetConfig.webhook,
         },
         branding: {
-            logo: '',
-            name: '',
-            welcomeText: '',
-            responseTimeText: '',
-            poweredBy: {
-                text: 'Powered by n8n',
-                link: 'https://n8n.partnerlinks.io/fabimarkl'
-            }
+          ...defaultSettings.branding,
+          ...window.ChatWidgetConfig.branding,
         },
         style: {
-            itsPrimaryColor: '#10b981', // Green
-            itsSecondaryColor: '#059669', // Darker green
-            position: 'right',
-            backgroundColor: '#ffffff',
-            fontColor: '#1f2937'
+          ...defaultSettings.style,
+          ...window.ChatWidgetConfig.style,
+          // Force green colors if user provided purple
+          itsPrimaryColor:
+            window.ChatWidgetConfig.style?.itsPrimaryColor === "#854fff"
+              ? "#10b981"
+              : window.ChatWidgetConfig.style?.itsPrimaryColor || "#10b981",
+          itsSecondaryColor:
+            window.ChatWidgetConfig.style?.itsSecondaryColor === "#6b3fd4"
+              ? "#059669"
+              : window.ChatWidgetConfig.style?.itsSecondaryColor || "#059669",
         },
-        suggestedQuestions: [] // Default empty array for suggested questions
-    };
+        suggestedQuestions:
+          window.ChatWidgetConfig.suggestedQuestions ||
+          defaultSettings.suggestedQuestions,
+      }
+    : defaultSettings;
 
-    // Merge user settings with defaults
-    const settings = window.ChatWidgetConfig ? 
-        {
-            webhook: { ...defaultSettings.webhook, ...window.ChatWidgetConfig.webhook },
-            branding: { ...defaultSettings.branding, ...window.ChatWidgetConfig.branding },
-            style: { 
-                ...defaultSettings.style, 
-                ...window.ChatWidgetConfig.style,
-                // Force green colors if user provided purple
-                itsPrimaryColor: window.ChatWidgetConfig.style?.itsPrimaryColor === '#854fff' ? '#10b981' : (window.ChatWidgetConfig.style?.itsPrimaryColor || '#10b981'),
-                itsSecondaryColor: window.ChatWidgetConfig.style?.itsSecondaryColor === '#6b3fd4' ? '#059669' : (window.ChatWidgetConfig.style?.itsSecondaryColor || '#059669')
-            },
-            suggestedQuestions: window.ChatWidgetConfig.suggestedQuestions || defaultSettings.suggestedQuestions
-        } : defaultSettings;
+  // Session tracking
+  let conversationId =
+    sessionStorage.getItem("conversationId") || createSessionId();
+  let isWaitingForResponse = false;
 
-    // Session tracking
-    let conversationId = '';
-    let isWaitingForResponse = false;
+  // Create widget DOM structure
+  const widgetRoot = document.createElement("div");
+  widgetRoot.className = "chat-assist-widget";
 
-    // Create widget DOM structure
-    const widgetRoot = document.createElement('div');
-    widgetRoot.className = 'chat-assist-widget';
-    
-    // Apply custom colors
-    widgetRoot.style.setProperty('--chat-widget-primary', settings.style.itsPrimaryColor);
-    widgetRoot.style.setProperty('--chat-widget-secondary', settings.style.itsSecondaryColor);
-    widgetRoot.style.setProperty('--chat-widget-tertiary', settings.style.itsSecondaryColor);
-    widgetRoot.style.setProperty('--chat-widget-surface', settings.style.backgroundColor);
-    widgetRoot.style.setProperty('--chat-widget-text', settings.style.fontColor);
+  // Apply custom colors
+  widgetRoot.style.setProperty(
+    "--chat-widget-primary",
+    settings.style.itsPrimaryColor
+  );
+  widgetRoot.style.setProperty(
+    "--chat-widget-secondary",
+    settings.style.itsSecondaryColor
+  );
+  widgetRoot.style.setProperty(
+    "--chat-widget-tertiary",
+    settings.style.itsSecondaryColor
+  );
+  widgetRoot.style.setProperty(
+    "--chat-widget-surface",
+    settings.style.backgroundColor
+  );
+  widgetRoot.style.setProperty("--chat-widget-text", settings.style.fontColor);
 
-    // Create chat panel
-    const chatWindow = document.createElement('div');
-    chatWindow.className = `chat-window ${settings.style.position === 'left' ? 'left-side' : 'right-side'}`;
-    
-    // Create welcome screen with header
-    const welcomeScreenHTML = `
+  // Create chat panel
+  const chatWindow = document.createElement("div");
+  chatWindow.className = `chat-window ${
+    settings.style.position === "left" ? "left-side" : "right-side"
+  }`;
+
+  // Create welcome screen with header
+  const welcomeScreenHTML = `
         <div class="chat-header">
             <img class="chat-header-logo" src="${settings.branding.logo}" alt="${settings.branding.name}">
             <span class="chat-header-title">${settings.branding.name}</span>
@@ -634,8 +665,8 @@
         </div>
     `;
 
-    // Create chat interface without duplicating the header
-    const chatInterfaceHTML = `
+  // Create chat interface without duplicating the header
+  const chatInterfaceHTML = `
         <div class="chat-body">
             <div class="chat-messages"></div>
             <div class="chat-controls">
@@ -652,357 +683,383 @@
             </div>
         </div>
     `;
-    
-    chatWindow.innerHTML = welcomeScreenHTML + chatInterfaceHTML;
-    
-    // Create toggle button
-    const launchButton = document.createElement('button');
-    launchButton.className = `chat-launcher ${settings.style.position === 'left' ? 'left-side' : 'right-side'}`;
-    launchButton.innerHTML = `
+
+  chatWindow.innerHTML = welcomeScreenHTML + chatInterfaceHTML;
+
+  // Create toggle button
+  const launchButton = document.createElement("button");
+  launchButton.className = `chat-launcher ${
+    settings.style.position === "left" ? "left-side" : "right-side"
+  }`;
+  launchButton.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
         </svg>`;
-    
-    // Add elements to DOM
-    widgetRoot.appendChild(chatWindow);
-    widgetRoot.appendChild(launchButton);
-    document.body.appendChild(widgetRoot);
 
-    // Get DOM elements
-    const startChatButton = chatWindow.querySelector('.chat-start-btn');
-    const chatBody = chatWindow.querySelector('.chat-body');
-    const messagesContainer = chatWindow.querySelector('.chat-messages');
-    const messageTextarea = chatWindow.querySelector('.chat-textarea');
-    const sendButton = chatWindow.querySelector('.chat-submit');
-    
-    // Registration form elements
-    const registrationForm = chatWindow.querySelector('.registration-form');
-    const userRegistration = chatWindow.querySelector('.user-registration');
-    const chatWelcome = chatWindow.querySelector('.chat-welcome');
-    const nameInput = chatWindow.querySelector('#chat-user-name');
-    const emailInput = chatWindow.querySelector('#chat-user-email');
-    const phoneInput = chatWindow.querySelector('#chat-user-phone'); // ADDED
-    const nameError = chatWindow.querySelector('#name-error');
-    const emailError = chatWindow.querySelector('#email-error');
-    const phoneError = chatWindow.querySelector('#phone-error'); // ADDED
+  // Add elements to DOM
+  widgetRoot.appendChild(chatWindow);
+  widgetRoot.appendChild(launchButton);
+  document.body.appendChild(widgetRoot);
 
-    // Helper function to generate unique session ID
-    function createSessionId() {
-        return crypto.randomUUID();
-    }
+  // Get DOM elements
+  const startChatButton = chatWindow.querySelector(".chat-start-btn");
+  const chatBody = chatWindow.querySelector(".chat-body");
+  const messagesContainer = chatWindow.querySelector(".chat-messages");
+  const messageTextarea = chatWindow.querySelector(".chat-textarea");
+  const sendButton = chatWindow.querySelector(".chat-submit");
 
-    // Create typing indicator element
-    function createTypingIndicator() {
-        const indicator = document.createElement('div');
-        indicator.className = 'typing-indicator';
-        indicator.innerHTML = `
+  // Registration form elements
+  const registrationForm = chatWindow.querySelector(".registration-form");
+  const userRegistration = chatWindow.querySelector(".user-registration");
+  const chatWelcome = chatWindow.querySelector(".chat-welcome");
+  const nameInput = chatWindow.querySelector("#chat-user-name");
+  const emailInput = chatWindow.querySelector("#chat-user-email");
+  const phoneInput = chatWindow.querySelector("#chat-user-phone"); // ADDED
+  const nameError = chatWindow.querySelector("#name-error");
+  const emailError = chatWindow.querySelector("#email-error");
+  const phoneError = chatWindow.querySelector("#phone-error"); // ADDED
+
+  // Helper function to generate unique session ID
+  function createSessionId() {
+    const sessionId = crypto.randomUUID();
+    sessionStorage.setItem("conversationId", sessionId);
+    return sessionId;
+  }
+
+  // Create typing indicator element
+  function createTypingIndicator() {
+    const indicator = document.createElement("div");
+    indicator.className = "typing-indicator";
+    indicator.innerHTML = `
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
         `;
-        return indicator;
+    return indicator;
+  }
+
+  // Function to convert URLs in text to clickable links
+  function linkifyText(text) {
+    // URL pattern that matches http, https, ftp links
+    const urlPattern =
+      /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+
+    // Convert URLs to HTML links
+    return text.replace(urlPattern, function (url) {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link">${url}</a>`;
+    });
+  }
+
+  // Show registration form
+  function showRegistrationForm() {
+    chatWelcome.style.display = "none";
+    userRegistration.classList.add("chat_active");
+  }
+
+  // Validate email format
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Handle registration form submission
+  async function handleRegistration(event) {
+    event.preventDefault();
+
+    // Reset error messages
+    nameError.textContent = "";
+    emailError.textContent = "";
+    phoneError.textContent = ""; // ADDED
+    nameInput.classList.remove("error");
+    emailInput.classList.remove("error");
+    phoneInput.classList.remove("error"); // ADDED
+
+    // Get values
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const phone = phoneInput.value.trim(); // ADDED
+
+    sessionStorage.setItem("userName", name);
+    sessionStorage.setItem("userEmail", email);
+    sessionStorage.setItem("userPhone", phone);
+
+    // Validate
+    let isValid = true;
+
+    if (!name) {
+      nameError.textContent = "Please enter your name";
+      nameInput.classList.add("error");
+      isValid = false;
     }
 
-    // Function to convert URLs in text to clickable links
-    function linkifyText(text) {
-        // URL pattern that matches http, https, ftp links
-        const urlPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-        
-        // Convert URLs to HTML links
-        return text.replace(urlPattern, function(url) {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link">${url}</a>`;
+    if (!email) {
+      emailError.textContent = "Please enter your email";
+      emailInput.classList.add("error");
+      isValid = false;
+    } else if (!isValidEmail(email)) {
+      emailError.textContent = "Please enter a valid email address";
+      emailInput.classList.add("error");
+      isValid = false;
+    }
+
+    // ADDED VALIDATION FOR PHONE
+    if (!phone) {
+      phoneError.textContent = "Please enter your phone number";
+      phoneInput.classList.add("error");
+      isValid = false;
+    }
+    // END OF ADDED VALIDATION
+
+    if (!isValid) return;
+
+    // Initialize conversation with user data
+    conversationId = createSessionId();
+
+    // Initialize conversation with user data
+    const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}`;
+
+    // First, load the session
+    const sessionData = [
+      {
+        action: "loadPreviousSession",
+        sessionId: conversationId,
+        route: settings.webhook.route,
+        metadata: { userId: email, userName: name, userPhone: phone },
+      },
+    ];
+
+    try {
+      // Hide registration form, show chat interface
+      userRegistration.classList.remove("chat_active");
+      chatBody.classList.add("chat_active");
+
+      // Show typing indicator
+      const typingIndicator = createTypingIndicator();
+      messagesContainer.appendChild(typingIndicator);
+
+      // Load session
+      const sessionResponse = await fetch(settings.webhook.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sessionData),
+      });
+
+      const sessionResponseData = await sessionResponse.json();
+
+      // Send user info as first message
+      const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}`; // MODIFIED
+
+      const userInfoData = {
+        action: "sendMessage",
+        sessionId: conversationId,
+        route: settings.webhook.route,
+        chatInput: userInfoMessage,
+        metadata: {
+          userId: email,
+          userName: name,
+          userPhone: phone, // ADDED
+          isUserInfo: true,
+        },
+      };
+
+      // Send user info
+      const userInfoResponse = await fetch(settings.webhook.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userInfoData),
+      });
+
+      const userInfoResponseData = await userInfoResponse.json();
+
+      // Remove typing indicator
+      messagesContainer.removeChild(typingIndicator);
+
+      // Display initial bot message with clickable links
+      const botMessage = document.createElement("div");
+      botMessage.className = "chat-bubble bot-bubble";
+      const messageText = Array.isArray(userInfoResponseData)
+        ? userInfoResponseData[0].output
+        : userInfoResponseData.output;
+      botMessage.innerHTML = linkifyText(messageText);
+      messagesContainer.appendChild(botMessage);
+
+      // Add sample questions if configured
+      if (
+        settings.suggestedQuestions &&
+        Array.isArray(settings.suggestedQuestions) &&
+        settings.suggestedQuestions.length > 0
+      ) {
+        const suggestedQuestionsContainer = document.createElement("div");
+        suggestedQuestionsContainer.className = "suggested-questions";
+
+        settings.suggestedQuestions.forEach((question) => {
+          const questionButton = document.createElement("button");
+          questionButton.className = "suggested-question-btn";
+          questionButton.textContent = question;
+          questionButton.addEventListener("click", () => {
+            submitMessage(question);
+            // Remove the suggestions after clicking
+            if (suggestedQuestionsContainer.parentNode) {
+              suggestedQuestionsContainer.parentNode.removeChild(
+                suggestedQuestionsContainer
+              );
+            }
+          });
+          suggestedQuestionsContainer.appendChild(questionButton);
         });
+
+        messagesContainer.appendChild(suggestedQuestionsContainer);
+      }
+
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      // Remove typing indicator if it exists
+      const indicator = messagesContainer.querySelector(".typing-indicator");
+      if (indicator) {
+        messagesContainer.removeChild(indicator);
+      }
+
+      // Show error message
+      const errorMessage = document.createElement("div");
+      errorMessage.className = "chat-bubble bot-bubble";
+      errorMessage.textContent =
+        "Sorry, I couldn't connect to the server. Please try again later.";
+      messagesContainer.appendChild(errorMessage);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+  }
 
-    // Show registration form
-    function showRegistrationForm() {
-        chatWelcome.style.display = 'none';
-        userRegistration.classList.add('chat_active');
+  // Send a message to the webhook
+  async function submitMessage(messageText) {
+    if (isWaitingForResponse) return;
+
+    isWaitingForResponse = true;
+
+    // Get user info from sessionStorage
+    const userName = sessionStorage.getItem("userName");
+    const userEmail = sessionStorage.getItem("userEmail");
+    const userPhone = sessionStorage.getItem("userPhone");
+
+    // Get user info if available
+    const name = nameInput ? nameInput.value.trim() : ""; // Corrected
+    const email = emailInput ? emailInput.value.trim() : ""; // Corrected
+    const phone = phoneInput ? phoneInput.value.trim() : ""; // ADDED
+
+    const requestData = {
+      action: "sendMessage",
+      sessionId: conversationId,
+      route: settings.webhook.route,
+      chatInput: messageText,
+      metadata: {
+        userId: userEmail,
+        userName: userName,
+        userPhone: userPhone,
+      },
+    };
+
+    // Display user message
+    const userMessage = document.createElement("div");
+    userMessage.className = "chat-bubble user-bubble";
+    userMessage.textContent = messageText;
+    messagesContainer.appendChild(userMessage);
+
+    // Show typing indicator
+    const typingIndicator = createTypingIndicator();
+    messagesContainer.appendChild(typingIndicator);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    try {
+      const response = await fetch(settings.webhook.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const responseData = await response.json();
+
+      // Remove typing indicator
+      messagesContainer.removeChild(typingIndicator);
+
+      // Display bot response with clickable links
+      const botMessage = document.createElement("div");
+      botMessage.className = "chat-bubble bot-bubble";
+      const responseText = Array.isArray(responseData)
+        ? responseData[0].output
+        : responseData.output;
+      botMessage.innerHTML = linkifyText(responseText);
+      messagesContainer.appendChild(botMessage);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } catch (error) {
+      console.error("Message submission error:", error);
+
+      // Remove typing indicator
+      messagesContainer.removeChild(typingIndicator);
+
+      // Show error message
+      const errorMessage = document.createElement("div");
+      errorMessage.className = "chat-bubble bot-bubble";
+      errorMessage.textContent =
+        "Sorry, I couldn't send your message. Please try again.";
+      messagesContainer.appendChild(errorMessage);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } finally {
+      isWaitingForResponse = false;
     }
+  }
 
-    // Validate email format
-    function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+  // Auto-resize textarea as user types
+  function autoResizeTextarea() {
+    messageTextarea.style.height = "auto";
+    messageTextarea.style.height =
+      (messageTextarea.scrollHeight > 120
+        ? 120
+        : messageTextarea.scrollHeight) + "px";
+  }
+
+  // Event listeners
+  startChatButton.addEventListener("click", showRegistrationForm);
+  registrationForm.addEventListener("submit", handleRegistration);
+
+  sendButton.addEventListener("click", () => {
+    const messageText = messageTextarea.value.trim();
+    if (messageText && !isWaitingForResponse) {
+      submitMessage(messageText);
+      messageTextarea.value = "";
+      messageTextarea.style.height = "auto";
     }
+  });
 
-    // Handle registration form submission
-    async function handleRegistration(event) {
-        event.preventDefault();
-        
-        // Reset error messages
-        nameError.textContent = '';
-        emailError.textContent = '';
-        phoneError.textContent = ''; // ADDED
-        nameInput.classList.remove('error');
-        emailInput.classList.remove('error');
-        phoneInput.classList.remove('error'); // ADDED
-        
-        // Get values
-        const name = nameInput.value.trim();
-        const email = emailInput.value.trim();
-        const phone = phoneInput.value.trim(); // ADDED
-        
-        // Validate
-        let isValid = true;
-        
-        if (!name) {
-            nameError.textContent = 'Please enter your name';
-            nameInput.classList.add('error');
-            isValid = false;
-        }
-        
-        if (!email) {
-            emailError.textContent = 'Please enter your email';
-            emailInput.classList.add('error');
-            isValid = false;
-        } else if (!isValidEmail(email)) {
-            emailError.textContent = 'Please enter a valid email address';
-            emailInput.classList.add('error');
-            isValid = false;
-        }
+  messageTextarea.addEventListener("input", autoResizeTextarea);
 
-        // ADDED VALIDATION FOR PHONE
-        if (!phone) {
-            phoneError.textContent = 'Please enter your phone number';
-            phoneInput.classList.add('error');
-            isValid = false;
-        }
-        // END OF ADDED VALIDATION
-        
-        if (!isValid) return;
-        
-        // Initialize conversation with user data
-        conversationId = createSessionId();
-        
-        // First, load the session
-        const sessionData = [{
-            action: "loadPreviousSession",
-            sessionId: conversationId,
-            route: settings.webhook.route,
-            metadata: {
-                userId: email,
-                userName: name,
-                userPhone: phone // ADDED
-            }
-        }];
-
-        try {
-            // Hide registration form, show chat interface
-            userRegistration.classList.remove('chat_active');
-            chatBody.classList.add('chat_active');
-            
-            // Show typing indicator
-            const typingIndicator = createTypingIndicator();
-            messagesContainer.appendChild(typingIndicator);
-            
-            // Load session
-            const sessionResponse = await fetch(settings.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(sessionData)
-            });
-            
-            const sessionResponseData = await sessionResponse.json();
-            
-            // Send user info as first message
-            const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}`; // MODIFIED
-            
-            const userInfoData = {
-                action: "sendMessage",
-                sessionId: conversationId,
-                route: settings.webhook.route,
-                chatInput: userInfoMessage,
-                metadata: {
-                    userId: email,
-                    userName: name,
-                    userPhone: phone, // ADDED
-                    isUserInfo: true
-                }
-            };
-            
-            // Send user info
-            const userInfoResponse = await fetch(settings.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userInfoData)
-            });
-            
-            const userInfoResponseData = await userInfoResponse.json();
-            
-            // Remove typing indicator
-            messagesContainer.removeChild(typingIndicator);
-            
-            // Display initial bot message with clickable links
-            const botMessage = document.createElement('div');
-            botMessage.className = 'chat-bubble bot-bubble';
-            const messageText = Array.isArray(userInfoResponseData) ? 
-                userInfoResponseData[0].output : userInfoResponseData.output;
-            botMessage.innerHTML = linkifyText(messageText);
-            messagesContainer.appendChild(botMessage);
-            
-            // Add sample questions if configured
-            if (settings.suggestedQuestions && Array.isArray(settings.suggestedQuestions) && settings.suggestedQuestions.length > 0) {
-                const suggestedQuestionsContainer = document.createElement('div');
-                suggestedQuestionsContainer.className = 'suggested-questions';
-                
-                settings.suggestedQuestions.forEach(question => {
-                    const questionButton = document.createElement('button');
-                    questionButton.className = 'suggested-question-btn';
-                    questionButton.textContent = question;
-                    questionButton.addEventListener('click', () => {
-                        submitMessage(question);
-                        // Remove the suggestions after clicking
-                        if (suggestedQuestionsContainer.parentNode) {
-                            suggestedQuestionsContainer.parentNode.removeChild(suggestedQuestionsContainer);
-                        }
-                    });
-                    suggestedQuestionsContainer.appendChild(questionButton);
-                });
-                
-                messagesContainer.appendChild(suggestedQuestionsContainer);
-            }
-            
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } catch (error) {
-            console.error('Registration error:', error);
-            
-            // Remove typing indicator if it exists
-            const indicator = messagesContainer.querySelector('.typing-indicator');
-            if (indicator) {
-                messagesContainer.removeChild(indicator);
-            }
-            
-            // Show error message
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'chat-bubble bot-bubble';
-            errorMessage.textContent = "Sorry, I couldn't connect to the server. Please try again later.";
-            messagesContainer.appendChild(errorMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+  messageTextarea.addEventListener("keypress", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      const messageText = messageTextarea.value.trim();
+      if (messageText && !isWaitingForResponse) {
+        submitMessage(messageText);
+        messageTextarea.value = "";
+        messageTextarea.style.height = "auto";
+      }
     }
+  });
 
-    // Send a message to the webhook
-    async function submitMessage(messageText) {
-        if (isWaitingForResponse) return;
-        
-        isWaitingForResponse = true;
-        
-        // Get user info if available
-        const name = nameInput ? nameInput.value.trim() : ""; // Corrected
-        const email = emailInput ? emailInput.value.trim() : ""; // Corrected
-        const phone = phoneInput ? phoneInput.value.trim() : ""; // ADDED
-        
-        const requestData = {
-            action: "sendMessage",
-            sessionId: conversationId,
-            route: settings.webhook.route,
-            chatInput: messageText,
-            metadata: {
-                userId: email,
-                userName: name,
-                userPhone: phone // ADDED
-            }
-        };
+  launchButton.addEventListener("click", () => {
+    chatWindow.classList.toggle("visible");
+  });
 
-        // Display user message
-        const userMessage = document.createElement('div');
-        userMessage.className = 'chat-bubble user-bubble';
-        userMessage.textContent = messageText;
-        messagesContainer.appendChild(userMessage);
-        
-        // Show typing indicator
-        const typingIndicator = createTypingIndicator();
-        messagesContainer.appendChild(typingIndicator);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-        try {
-            const response = await fetch(settings.webhook.url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
-            });
-            
-            const responseData = await response.json();
-            
-            // Remove typing indicator
-            messagesContainer.removeChild(typingIndicator);
-            
-            // Display bot response with clickable links
-            const botMessage = document.createElement('div');
-            botMessage.className = 'chat-bubble bot-bubble';
-            const responseText = Array.isArray(responseData) ? responseData[0].output : responseData.output;
-            botMessage.innerHTML = linkifyText(responseText);
-            messagesContainer.appendChild(botMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } catch (error) {
-            console.error('Message submission error:', error);
-            
-            // Remove typing indicator
-            messagesContainer.removeChild(typingIndicator);
-            
-            // Show error message
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'chat-bubble bot-bubble';
-            errorMessage.textContent = "Sorry, I couldn't send your message. Please try again.";
-            messagesContainer.appendChild(errorMessage);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        } finally {
-            isWaitingForResponse = false;
-        }
-    }
-
-    // Auto-resize textarea as user types
-    function autoResizeTextarea() {
-        messageTextarea.style.height = 'auto';
-        messageTextarea.style.height = (messageTextarea.scrollHeight > 120 ? 120 : messageTextarea.scrollHeight) + 'px';
-    }
-
-    // Event listeners
-    startChatButton.addEventListener('click', showRegistrationForm);
-    registrationForm.addEventListener('submit', handleRegistration);
-    
-    sendButton.addEventListener('click', () => {
-        const messageText = messageTextarea.value.trim();
-        if (messageText && !isWaitingForResponse) {
-            submitMessage(messageText);
-            messageTextarea.value = '';
-            messageTextarea.style.height = 'auto';
-        }
+  // Close button functionality
+  const closeButtons = chatWindow.querySelectorAll(".chat-close-btn");
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      chatWindow.classList.remove("visible");
     });
-    
-    messageTextarea.addEventListener('input', autoResizeTextarea);
-    
-    messageTextarea.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            const messageText = messageTextarea.value.trim();
-            if (messageText && !isWaitingForResponse) {
-                submitMessage(messageText);
-                messageTextarea.value = '';
-                messageTextarea.style.height = 'auto';
-            }
-        }
-    });
-    
-    launchButton.addEventListener('click', () => {
-        chatWindow.classList.toggle('visible');
-    });
-
-    // Close button functionality
-    const closeButtons = chatWindow.querySelectorAll('.chat-close-btn');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            chatWindow.classList.remove('visible');
-        });
-    });
+  });
 })();
-
-
-
