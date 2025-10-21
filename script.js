@@ -184,6 +184,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            max-height: 480px;
         }
 
         .chat-assist-widget .chat-messages::-webkit-scrollbar {
