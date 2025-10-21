@@ -547,8 +547,8 @@
       welcomeText: "",
       responseTimeText: "",
       poweredBy: {
-        text: "Powered by n8n",
-        link: "https://n8n.partnerlinks.io/fabimarkl",
+        text: "",
+        link: "",
       },
     },
     style: {
@@ -677,9 +677,6 @@
                         <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
                     </svg>
                 </button>
-            </div>
-            <div class="chat-footer">
-                <a class="chat-footer-link" href="${settings.branding.poweredBy.link}" target="_blank">${settings.branding.poweredBy.text}</a>
             </div>
         </div>
     `;
