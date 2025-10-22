@@ -651,7 +651,7 @@
   }`;
   chatPrompt.innerHTML = `
         <div class="chat-prompt-message">
-            Hey, we are here to help you. You may chat with us.
+           Welcome to Cottage Home Care Services. how may I help you
         </div>
         <button class="chat-prompt-close">×</button>
     `;
