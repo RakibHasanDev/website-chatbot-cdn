@@ -992,6 +992,13 @@
         messagesContainer.appendChild(bubble);
       });
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Schedule the proactive prompt after 10 seconds
+      setTimeout(() => {
+        // Only show if the main chat window isn't already open
+        if (!chatWindow.classList.contains("visible")) {
+          chatPrompt.classList.add("visible");
+        }
+      }, 10000); // 10000ms = 10 seconds
       // Do nothing, window stays hidden.
     } else {
       // --- NEW USER ---
