@@ -853,11 +853,11 @@
         action: "loadPreviousSession",
         sessionId: conversationId,
         route: settings.webhook.route,
+        pageUrl: pageUrl, // Added
         metadata: {
           userId: email,
           userName: name,
           userPhone: phone,
-          pageUrl: pageUrl, // Added
         },
       },
     ];
@@ -889,11 +889,11 @@
         sessionId: conversationId,
         route: settings.webhook.route,
         chatInput: userInfoMessage,
+        pageUrl: pageUrl, // Added
         metadata: {
           userId: email,
           userName: name,
           userPhone: phone,
-          pageUrl: pageUrl, // Added
           isUserInfo: true,
         },
       };
@@ -983,11 +983,11 @@
       sessionId: conversationId,
       route: settings.webhook.route,
       chatInput: messageText,
+      pageUrl: pageUrl, // Added
       metadata: {
         userId: userEmail,
         userName: userName,
         userPhone: userPhone,
-        pageUrl: pageUrl, // Added
       },
     };
     // --- END MODIFICATION ---
