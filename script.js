@@ -681,7 +681,7 @@
   const emailError = chatWindow.querySelector("#email-error");
   const phoneError = chatWindow.querySelector("#phone-error");
   const pageUrlInput = chatWindow.querySelector("#chat-page-url");
-  
+
   // --- MODIFICATION: Get new prompt elements ---
   const chatPromptClose = chatPrompt.querySelector(".chat-prompt-close");
   // --- END MODIFICATION ---
@@ -724,12 +724,12 @@
   }
   function addMessageToHistory(type, text) {
     try {
-        const history = getChatHistory();
-        history.push({ type, text });
-        saveChatHistory(history);
+      const history = getChatHistory();
+      history.push({ type, text });
+      saveChatHistory(history);
     } catch (e) {
-        console.error("Failed to save chat history:", e);
-        localStorage.removeItem("chatHistory");
+      console.error("Failed to save chat history:", e);
+      localStorage.removeItem("chatHistory");
     }
   }
 
@@ -749,8 +749,8 @@
   // Handle registration form submission (Includes pageUrl) (Unchanged)
   async function handleRegistration(event) {
     event.preventDefault();
-    saveChatHistory([]); 
-    conversationId = createSessionId(); 
+    saveChatHistory([]);
+    conversationId = createSessionId();
 
     nameError.textContent = "";
     emailError.textContent = "";
@@ -762,12 +762,12 @@
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
     const phone = phoneInput.value.trim();
-    const pageUrl = pageUrlInput.value.trim(); 
+    const pageUrl = pageUrlInput.value.trim();
 
     localStorage.setItem("userName", name);
     localStorage.setItem("userEmail", email);
     localStorage.setItem("userPhone", phone);
-    localStorage.setItem("pageUrl", pageUrl); 
+    localStorage.setItem("pageUrl", `https://cottagehomecare.com${pageUrl}`);
 
     let isValid = true;
     if (!name) {
@@ -791,18 +791,18 @@
     }
     if (!isValid) return;
 
-    const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nPage: ${pageUrl}`; 
+    const userInfoMessage = `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nPage: ${pageUrl}`;
 
     const sessionData = [
       {
         action: "loadPreviousSession",
         sessionId: conversationId,
         route: settings.webhook.route,
-        metadata: { 
-            userId: email, 
-            userName: name, 
-            userPhone: phone, 
-            pageUrl: pageUrl 
+        metadata: {
+          userId: email,
+          userName: name,
+          userPhone: phone,
+          pageUrl: `https://cottagehomecare.com${pageUrl}`,
         },
       },
     ];
@@ -821,7 +821,7 @@
       });
 
       const sessionResponseData = await sessionResponse.json();
-      console.log('sessionResponseData', sessionResponseData)
+      console.log("sessionResponseData", sessionResponseData);
 
       const userInfoData = {
         action: "sendMessage",
@@ -832,7 +832,7 @@
           userId: email,
           userName: name,
           userPhone: phone,
-          pageUrl: pageUrl, 
+          pageUrl: `https://cottagehomecare.com${pageUrl}`,
           isUserInfo: true,
         },
       };
@@ -853,7 +853,7 @@
         : userInfoResponseData.output;
       botMessage.innerHTML = linkifyText(messageText);
       messagesContainer.appendChild(botMessage);
-      addMessageToHistory('bot', messageText);
+      addMessageToHistory("bot", messageText);
 
       if (
         settings.suggestedQuestions &&
@@ -902,7 +902,7 @@
     const userName = localStorage.getItem("userName");
     const userEmail = localStorage.getItem("userEmail");
     const userPhone = localStorage.getItem("userPhone");
-    const pageUrl = localStorage.getItem("pageUrl"); 
+    const pageUrl = localStorage.getItem("pageUrl");
 
     const requestData = {
       action: "sendMessage",
@@ -913,7 +913,7 @@
         userId: userEmail,
         userName: userName,
         userPhone: userPhone,
-        pageUrl: pageUrl 
+        pageUrl: `https://cottagehomecare.com${pageUrl}`,
       },
     };
 
@@ -921,7 +921,7 @@
     userMessage.className = "chat-bubble user-bubble";
     userMessage.textContent = messageText;
     messagesContainer.appendChild(userMessage);
-    addMessageToHistory('user', messageText);
+    addMessageToHistory("user", messageText);
 
     const typingIndicator = createTypingIndicator();
     messagesContainer.appendChild(typingIndicator);
@@ -944,7 +944,7 @@
         : responseData.output;
       botMessage.innerHTML = linkifyText(responseText);
       messagesContainer.appendChild(botMessage);
-      addMessageToHistory('bot', responseText);
+      addMessageToHistory("bot", responseText);
 
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     } catch (error) {
@@ -979,21 +979,20 @@
     if (storedName && storedEmail && storedId) {
       // --- RETURNING USER ---
       console.log("Returning user found. Loading history.");
-      conversationId = storedId; 
+      conversationId = storedId;
       chatWelcome.style.display = "none";
       userRegistration.classList.remove("chat_active");
       chatBody.classList.add("chat_active");
 
       const history = getChatHistory();
-      history.forEach(message => {
-          const bubble = document.createElement("div");
-          bubble.innerHTML = linkifyText(message.text); 
-          bubble.className = `chat-bubble ${message.type}-bubble`;
-          messagesContainer.appendChild(bubble);
+      history.forEach((message) => {
+        const bubble = document.createElement("div");
+        bubble.innerHTML = linkifyText(message.text);
+        bubble.className = `chat-bubble ${message.type}-bubble`;
+        messagesContainer.appendChild(bubble);
       });
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
       // Do nothing, window stays hidden.
-      
     } else {
       // --- NEW USER ---
       console.log("No valid user session found. Scheduling prompt.");
@@ -1003,14 +1002,14 @@
       localStorage.removeItem("userPhone");
       localStorage.removeItem("chatHistory");
       localStorage.removeItem("pageUrl");
-      conversationId = null; 
-      
+      conversationId = null;
+
       // Schedule the proactive prompt after 10 seconds
       setTimeout(() => {
-          // Only show if the main chat window isn't already open
-          if (!chatWindow.classList.contains("visible")) {
-              chatPrompt.classList.add("visible");
-          }
+        // Only show if the main chat window isn't already open
+        if (!chatWindow.classList.contains("visible")) {
+          chatPrompt.classList.add("visible");
+        }
       }, 10000); // 10000ms = 10 seconds
     }
   }
@@ -1050,7 +1049,7 @@
     chatWindow.classList.toggle("visible");
     // Hide the prompt if it's visible
     if (chatPrompt.classList.contains("visible")) {
-        chatPrompt.classList.remove("visible");
+      chatPrompt.classList.remove("visible");
     }
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
@@ -1073,15 +1072,14 @@
   // Clicking the prompt message itself
   chatPrompt.addEventListener("click", (e) => {
     // Don't trigger if clicking the close button
-    if (e.target === chatPromptClose) return; 
+    if (e.target === chatPromptClose) return;
 
     // Hide the prompt
     chatPrompt.classList.remove("visible");
-    
+
     // Show the main chat window
     chatWindow.classList.add("visible");
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
   // --- END MODIFICATION ---
-
 })();
