@@ -738,7 +738,7 @@
   function showRegistrationForm() {
     chatWelcome.style.display = "none";
     userRegistration.classList.add("chat_active");
-    pageUrlInput.value = window.location.pathname;
+    pageUrlInput.value = window.location.href;
   }
 
   // Validate email format (Unchanged)
