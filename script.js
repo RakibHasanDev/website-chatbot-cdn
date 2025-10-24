@@ -11,6 +11,8 @@
     "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap";
   document.head.appendChild(fontElement);
 
+  console.log("hello")
+
   // Apply widget styles
   const widgetStyles = document.createElement("style");
   widgetStyles.textContent = `
